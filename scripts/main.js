@@ -47,7 +47,11 @@ const app = {
         alert('Settings Saved');
     },
 
-    // ... (rest of the file) ...
+    saveState() {
+        localStorage.setItem('sitecalc_state', JSON.stringify(this.state));
+    },
+
+
 
     // --- REPORTING ---
     exportReport() {
@@ -194,6 +198,7 @@ const app = {
         { id: 'takeoff', icon: 'clipboard-list', label: 'Quantity Takeoff' },
         { id: 'materials', icon: 'library', label: 'Materials DB' },
         { id: 'site', icon: 'map', label: 'Site Tools' },
+        { id: 'contact', icon: 'mail', label: 'Contact Us' },
         { id: 'settings', icon: 'settings', label: 'Settings' }
     ],
 
@@ -505,6 +510,24 @@ const app = {
     },
 
     // --- REPORTING ---
+
+    sendContactEmail(e) {
+        e.preventDefault();
+        const name = document.getElementById('contact-name').value;
+        const subjectType = document.getElementById('contact-subject').value;
+        const message = document.getElementById('contact-message').value;
+
+        if (!name || !message) {
+            alert('Please fill in all fields.');
+            return;
+        }
+
+        const subject = `[SiteCalc] ${subjectType}: ${name}`;
+        const body = `Name: ${name}\n\n${message}`;
+        const mailtoLink = `mailto:adk2049@gmail.com?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
+
+        window.location.href = mailtoLink;
+    },
 
 };
 
