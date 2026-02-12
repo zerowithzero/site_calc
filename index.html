@@ -1,0 +1,546 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SiteCalc — Civil Toolbox</title>
+    <meta name="description" content="Offline-friendly civil engineering toolbox for students and professionals.">
+
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+
+    <!-- Libraries -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/mathjs/11.8.0/math.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.29/jspdf.plugin.autotable.min.js"></script>
+    <script src="https://unpkg.com/lucide@latest"></script>
+
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        civil: {
+                            50: '#f5f7fa',
+                            100: '#e4e7eb',
+                            500: '#3b82f6', // Blueprint Blue
+                            600: '#2563eb',
+                            800: '#1e3a8a',
+                            900: '#1e293b',
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+    <link rel="stylesheet" href="css/style.css">
+</head>
+
+<body class="bg-civil-50 text-slate-800 h-screen flex flex-col md:flex-row overflow-hidden">
+
+    <!-- Mobile Header -->
+    <header class="md:hidden bg-civil-900 text-white p-4 flex justify-between items-center z-50">
+        <div class="flex items-center gap-2">
+            <i data-lucide="hard-hat" class="w-6 h-6 text-yellow-400"></i>
+            <span class="font-bold text-lg">SiteCalc</span>
+        </div>
+        <button id="mobile-menu-btn" class="p-2 hover:bg-slate-700 rounded">
+            <i data-lucide="menu" class="w-6 h-6"></i>
+        </button>
+    </header>
+
+    <!-- Sidebar Navigation -->
+    <nav id="sidebar"
+        class="bg-civil-900 text-slate-300 w-full md:w-64 flex-shrink-0 flex flex-col h-[calc(100vh-64px)] md:h-screen absolute md:relative transform -translate-x-full md:translate-x-0 transition-transform duration-300 z-40 border-r border-slate-700">
+        <div class="p-6 hidden md:flex items-center gap-3 border-b border-slate-700">
+            <div class="bg-yellow-500 p-2 rounded-lg text-civil-900">
+                <i data-lucide="hard-hat" class="w-6 h-6"></i>
+            </div>
+            <div>
+                <h1 class="font-bold text-white tracking-wide">SiteCalc</h1>
+                <p class="text-xs text-slate-400">Student Toolbox</p>
+            </div>
+        </div>
+
+        <div class="flex-1 overflow-y-auto py-4">
+            <ul class="space-y-1 px-3" id="nav-links">
+                <!-- Nav Items injected by JS -->
+            </ul>
+        </div>
+
+        <div class="p-4 border-t border-slate-700 text-xs text-center text-slate-500">
+            v1.0.0 &bull; Offline Ready
+        </div>
+    </nav>
+
+    <!-- Main Content Area -->
+    <main class="flex-1 h-full overflow-hidden relative flex flex-col">
+        <!-- Top Bar -->
+        <div class="bg-white border-b border-slate-200 p-4 flex justify-between items-center shadow-sm">
+            <h2 id="page-title" class="text-xl font-bold text-civil-900 flex items-center gap-2">Dashboard</h2>
+            <div class="flex gap-3">
+                <button onclick="app.exportReport()"
+                    class="flex items-center gap-2 bg-civil-600 hover:bg-civil-700 text-white px-3 py-1.5 rounded-md text-sm transition font-medium">
+                    <i data-lucide="file-down" class="w-4 h-4"></i> Export PDF
+                </button>
+                <button onclick="app.toggleHelp()" class="text-slate-500 hover:text-civil-600">
+                    <i data-lucide="help-circle" class="w-6 h-6"></i>
+                </button>
+            </div>
+        </div>
+
+        <!-- Content Views -->
+        <div id="content-area" class="flex-1 overflow-y-auto p-4 md:p-8 relative">
+
+            <!-- VIEW: DASHBOARD -->
+            <div id="view-dashboard" class="view-section space-y-6">
+                <div class="bg-gradient-to-r from-civil-800 to-civil-600 rounded-2xl p-6 text-white shadow-lg">
+                    <h3 class="text-2xl font-bold mb-2">Welcome back, Engineer!</h3>
+                    <p class="opacity-90 max-w-xl">Start a new calculation, sketch a site plan, or lookup material
+                        properties. Your data is saved locally.</p>
+                </div>
+
+                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                    <button onclick="app.navigate('calculators')"
+                        class="tool-card bg-white p-6 rounded-xl border border-slate-200 text-left hover:border-civil-500 group">
+                        <div
+                            class="bg-blue-100 w-12 h-12 rounded-lg flex items-center justify-center mb-4 text-blue-600 group-hover:bg-blue-600 group-hover:text-white transition">
+                            <i data-lucide="calculator" class="w-6 h-6"></i>
+                        </div>
+                        <h4 class="font-bold text-lg mb-1">Calculators</h4>
+                        <p class="text-sm text-slate-500">Beam bending, RC columns, and unit conversions.</p>
+                    </button>
+
+                    <button onclick="app.navigate('sketch')"
+                        class="tool-card bg-white p-6 rounded-xl border border-slate-200 text-left hover:border-civil-500 group">
+                        <div
+                            class="bg-purple-100 w-12 h-12 rounded-lg flex items-center justify-center mb-4 text-purple-600 group-hover:bg-purple-600 group-hover:text-white transition">
+                            <i data-lucide="pen-tool" class="w-6 h-6"></i>
+                        </div>
+                        <h4 class="font-bold text-lg mb-1">Sketch & Measure</h4>
+                        <p class="text-sm text-slate-500">Draw simple plans, set scale, and measure areas.</p>
+                    </button>
+
+                    <button onclick="app.navigate('takeoff')"
+                        class="tool-card bg-white p-6 rounded-xl border border-slate-200 text-left hover:border-civil-500 group">
+                        <div
+                            class="bg-green-100 w-12 h-12 rounded-lg flex items-center justify-center mb-4 text-green-600 group-hover:bg-green-600 group-hover:text-white transition">
+                            <i data-lucide="clipboard-list" class="w-6 h-6"></i>
+                        </div>
+                        <h4 class="font-bold text-lg mb-1">Quantity Takeoff</h4>
+                        <p class="text-sm text-slate-500">Estimate quantities and costs (BOQ).</p>
+                    </button>
+                </div>
+            </div>
+
+            <!-- VIEW: CALCULATORS -->
+            <div id="view-calculators" class="view-section hidden space-y-6">
+                <!-- Sub Tabs -->
+                <div class="flex space-x-2 border-b border-slate-200 overflow-x-auto pb-1 mb-4">
+                    <button
+                        class="calc-tab active px-4 py-2 text-sm font-medium border-b-2 border-civil-600 text-civil-600"
+                        onclick="app.switchCalc('beam')">Beam Analysis</button>
+                    <button
+                        class="calc-tab px-4 py-2 text-sm font-medium border-b-2 border-transparent text-slate-500 hover:text-slate-700"
+                        onclick="app.switchCalc('column')">RC Column</button>
+                    <button
+                        class="calc-tab px-4 py-2 text-sm font-medium border-b-2 border-transparent text-slate-500 hover:text-slate-700"
+                        onclick="app.switchCalc('mix')">Concrete Mix</button>
+                    <button
+                        class="calc-tab px-4 py-2 text-sm font-medium border-b-2 border-transparent text-slate-500 hover:text-slate-700"
+                        onclick="app.switchCalc('slope')">Slope/Grad</button>
+                    <button
+                        class="calc-tab px-4 py-2 text-sm font-medium border-b-2 border-transparent text-slate-500 hover:text-slate-700"
+                        onclick="app.switchCalc('converter')">Converter</button>
+                </div>
+
+                <!-- Mix Design Calc -->
+                <div id="calc-mix"
+                    class="calc-content hidden bg-white p-6 rounded-xl shadow-sm border border-slate-200 max-w-4xl">
+                    <h3 class="text-lg font-bold mb-4">Concrete Mix Estimator</h3>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <div class="space-y-4">
+                            <div>
+                                <label class="block text-sm font-medium text-slate-700 mb-1">Concrete Grade</label>
+                                <select id="mix-grade" class="w-full border rounded-md p-2">
+                                    <option value="M10">M10 (1:3:6)</option>
+                                    <option value="M15">M15 (1:2:4)</option>
+                                    <option value="M20" selected>M20 (1:1.5:3)</option>
+                                    <option value="M25">M25 (1:1:2)</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-slate-700 mb-1">Total Volume (Wet)
+                                    [m³]</label>
+                                <input type="number" id="mix-vol" class="w-full border rounded-md p-2" value="1"
+                                    placeholder="e.g. 10">
+                            </div>
+                            <button onclick="app.calculateMix()"
+                                class="w-full bg-civil-600 text-white py-2 rounded-md hover:bg-civil-700 font-medium">Calculate
+                                Materials</button>
+                        </div>
+                        <div class="bg-slate-50 p-4 rounded-lg border border-slate-100">
+                            <h4 class="font-bold text-slate-700 mb-3 border-b pb-2">Material Quantities</h4>
+                            <div id="mix-results" class="space-y-2 text-sm">
+                                <p class="text-slate-500 italic">Enter volume and grade...</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Slope Calc -->
+                <div id="calc-slope"
+                    class="calc-content hidden bg-white p-6 rounded-xl shadow-sm border border-slate-200 max-w-4xl">
+                    <h3 class="text-lg font-bold mb-4">Slope & Gradient</h3>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <div class="space-y-4">
+                            <div>
+                                <label class="block text-sm font-medium text-slate-700 mb-1">Rise (Vertical) [m]</label>
+                                <input type="number" id="slope-rise" class="w-full border rounded-md p-2"
+                                    placeholder="Height difference">
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-slate-700 mb-1">Run (Horizontal)
+                                    [m]</label>
+                                <input type="number" id="slope-run" class="w-full border rounded-md p-2"
+                                    placeholder="Horizontal distance">
+                            </div>
+                            <button onclick="app.calculateSlope()"
+                                class="w-full bg-civil-600 text-white py-2 rounded-md hover:bg-civil-700 font-medium">Calculate
+                                Gradient</button>
+                        </div>
+                        <div
+                            class="bg-slate-50 p-4 rounded-lg border border-slate-100 flex items-center justify-center">
+                            <div id="slope-results" class="text-center w-full">
+                                <p class="text-slate-500 italic">Enter Rise and Run...</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Beam Calc -->
+                <div id="calc-beam"
+                    class="calc-content bg-white p-6 rounded-xl shadow-sm border border-slate-200 max-w-4xl">
+                    <h3 class="text-lg font-bold mb-4">Simply Supported Beam (Point Load)</h3>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <div class="space-y-4">
+                            <div>
+                                <label class="block text-sm font-medium text-slate-700 mb-1">Span Length (L) [m]</label>
+                                <input type="number" id="beam-L"
+                                    class="w-full border rounded-md p-2 focus:ring-2 focus:ring-civil-500 outline-none"
+                                    placeholder="e.g. 5" value="5">
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-slate-700 mb-1">Point Load (P) [kN]</label>
+                                <input type="number" id="beam-P"
+                                    class="w-full border rounded-md p-2 focus:ring-2 focus:ring-civil-500 outline-none"
+                                    placeholder="e.g. 10" value="10">
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-slate-700 mb-1">Distance from Left Support
+                                    (a) [m]</label>
+                                <input type="number" id="beam-a"
+                                    class="w-full border rounded-md p-2 focus:ring-2 focus:ring-civil-500 outline-none"
+                                    placeholder="e.g. 2.5" value="2.5">
+                            </div>
+                            <button onclick="app.calculateBeam()"
+                                class="w-full bg-civil-600 text-white py-2 rounded-md hover:bg-civil-700 font-medium">Calculate</button>
+                        </div>
+                        <div class="bg-slate-50 p-4 rounded-lg border border-slate-100">
+                            <h4 class="font-bold text-slate-700 mb-3 border-b pb-2">Results</h4>
+                            <div id="beam-results" class="space-y-2 text-sm">
+                                <p class="text-slate-500 italic">Enter values and hit Calculate...</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Column Calc -->
+                <div id="calc-column"
+                    class="calc-content hidden bg-white p-6 rounded-xl shadow-sm border border-slate-200 max-w-4xl">
+                    <h3 class="text-lg font-bold mb-4">Short RC Column Capacity</h3>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <div class="space-y-4">
+                            <div class="grid grid-cols-2 gap-4">
+                                <div>
+                                    <label class="block text-xs font-medium text-slate-700 mb-1">Width (b) [mm]</label>
+                                    <input type="number" id="col-b" class="w-full border rounded-md p-2" value="300">
+                                </div>
+                                <div>
+                                    <label class="block text-xs font-medium text-slate-700 mb-1">Depth (D) [mm]</label>
+                                    <input type="number" id="col-d" class="w-full border rounded-md p-2" value="300">
+                                </div>
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-slate-700 mb-1">Concrete Grade (fck)
+                                    [MPa]</label>
+                                <select id="col-fck" class="w-full border rounded-md p-2">
+                                    <option value="20">M20</option>
+                                    <option value="25" selected>M25</option>
+                                    <option value="30">M30</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-slate-700 mb-1">Steel Grade (fy)
+                                    [MPa]</label>
+                                <select id="col-fy" class="w-full border rounded-md p-2">
+                                    <option value="415">Fe415</option>
+                                    <option value="500" selected>Fe500</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-slate-700 mb-1">Main Reinforcement Area
+                                    (Asc) [mm²]</label>
+                                <input type="number" id="col-asc" class="w-full border rounded-md p-2"
+                                    placeholder="4 bars of 16mm = 804" value="804">
+                            </div>
+                            <button onclick="app.calculateColumn()"
+                                class="w-full bg-civil-600 text-white py-2 rounded-md hover:bg-civil-700 font-medium">Check
+                                Capacity</button>
+                        </div>
+                        <div class="bg-slate-50 p-4 rounded-lg border border-slate-100">
+                            <h4 class="font-bold text-slate-700 mb-3 border-b pb-2">Axial Capacity (Pu)</h4>
+                            <div id="col-results" class="space-y-2 text-sm">
+                                <p class="text-slate-500 italic">Enter parameters...</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Unit Converter -->
+                <div id="calc-converter"
+                    class="calc-content hidden bg-white p-6 rounded-xl shadow-sm border border-slate-200 max-w-4xl">
+                    <h3 class="text-lg font-bold mb-4">Quick Converter</h3>
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-4 items-end">
+                        <div>
+                            <label class="block text-sm font-medium text-slate-700 mb-1">Value</label>
+                            <input type="number" id="conv-val" class="w-full border rounded-md p-2"
+                                oninput="app.convert()" value="1">
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-slate-700 mb-1">Category</label>
+                            <select id="conv-cat" class="w-full border rounded-md p-2" onchange="app.updateConvUnits()">
+                                <option value="length">Length</option>
+                                <option value="area">Area</option>
+                                <option value="force">Force</option>
+                                <option value="pressure">Stress/Pressure</option>
+                            </select>
+                        </div>
+                        <div class="md:col-span-3 grid grid-cols-2 gap-4">
+                            <div>
+                                <label class="block text-xs font-medium text-slate-500 mb-1">From</label>
+                                <select id="conv-from" class="w-full border rounded-md p-2"
+                                    onchange="app.convert()"></select>
+                            </div>
+                            <div>
+                                <label class="block text-xs font-medium text-slate-500 mb-1">To</label>
+                                <select id="conv-to" class="w-full border rounded-md p-2"
+                                    onchange="app.convert()"></select>
+                            </div>
+                        </div>
+                        <div class="md:col-span-3 bg-civil-50 p-4 rounded text-center">
+                            <span id="conv-result" class="text-2xl font-mono font-bold text-civil-700">---</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- VIEW: SKETCHPAD -->
+            <div id="view-sketch" class="view-section hidden h-full flex flex-col">
+                <div
+                    class="flex flex-wrap gap-2 mb-2 bg-white p-2 rounded-lg border border-slate-200 shadow-sm items-center">
+                    <button onclick="sketchApp.setMode('line')" id="btn-mode-line"
+                        class="p-2 rounded hover:bg-slate-100 border border-transparent active-mode" title="Draw Line">
+                        <i data-lucide="pencil" class="w-4 h-4"></i>
+                    </button>
+                    <button onclick="sketchApp.clearCanvas()" class="p-2 rounded hover:bg-red-50 text-red-600"
+                        title="Clear All">
+                        <i data-lucide="trash-2" class="w-4 h-4"></i>
+                    </button>
+                    <div class="h-6 w-px bg-slate-300 mx-1"></div>
+                    <div class="flex items-center gap-2 text-sm">
+                        <span>Scale: 1px = </span>
+                        <input type="number" id="sketch-scale" value="0.05"
+                            class="w-16 border rounded px-1 py-0.5 text-center" onchange="sketchApp.updateScale()">
+                        <span>m</span>
+                    </div>
+                    <div class="flex-1 text-right text-xs text-slate-500" id="sketch-stats">
+                        Items: 0 | Total Length: 0m
+                    </div>
+                </div>
+                <div class="flex-1 bg-white border border-slate-300 rounded-lg relative overflow-hidden shadow-inner cursor-crosshair"
+                    id="canvas-container">
+                    <canvas id="sketch-canvas" class="block"></canvas>
+                    <div
+                        class="absolute bottom-2 right-2 bg-white/90 p-2 rounded text-xs pointer-events-none border border-slate-200 shadow">
+                        Drag to draw lines. Double-click to finish polyline (future).
+                    </div>
+                </div>
+            </div>
+
+            <!-- VIEW: TAKEOFF -->
+            <div id="view-takeoff" class="view-section hidden space-y-4">
+                <div class="flex justify-between items-end">
+                    <h3 class="text-lg font-bold">Bill of Quantities</h3>
+                    <button onclick="takeoffApp.addItem()"
+                        class="bg-green-600 hover:bg-green-700 text-white px-3 py-1.5 rounded-md text-sm flex items-center gap-1">
+                        <i data-lucide="plus" class="w-4 h-4"></i> Add Item
+                    </button>
+                </div>
+
+                <div class="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
+                    <div class="overflow-x-auto">
+                        <table class="w-full text-sm text-left">
+                            <thead class="bg-slate-50 text-slate-700 border-b border-slate-200">
+                                <tr>
+                                    <th class="p-3 w-10">#</th>
+                                    <th class="p-3">Description</th>
+                                    <th class="p-3 w-24">Unit</th>
+                                    <th class="p-3 w-24">Qty</th>
+                                    <th class="p-3 w-28">Rate</th>
+                                    <th class="p-3 w-28 text-right">Amount</th>
+                                    <th class="p-3 w-10"></th>
+                                </tr>
+                            </thead>
+                            <tbody id="boq-body" class="divide-y divide-slate-100">
+                                <!-- JS Injected Rows -->
+                            </tbody>
+                            <tfoot class="bg-slate-50 font-bold text-slate-800">
+                                <tr>
+                                    <td colspan="5" class="p-3 text-right">Total Estimated Cost:</td>
+                                    <td class="p-3 text-right" id="boq-total">0.00</td>
+                                    <td></td>
+                                </tr>
+                            </tfoot>
+                        </table>
+                    </div>
+                </div>
+                <p class="text-xs text-slate-500">* Rates are indicative. Use local SSR (Schedule of Rates) for
+                    accuracy.</p>
+            </div>
+
+            <!-- VIEW: MATERIALS -->
+            <div id="view-materials" class="view-section hidden space-y-4">
+                <div class="relative">
+                    <i data-lucide="search" class="absolute left-3 top-3 w-5 h-5 text-slate-400"></i>
+                    <input type="text" id="mat-search" onkeyup="app.filterMaterials()"
+                        placeholder="Search concrete, steel, soil..."
+                        class="w-full pl-10 pr-4 py-2.5 border rounded-lg shadow-sm focus:ring-2 focus:ring-civil-500 outline-none">
+                </div>
+                <div id="material-list" class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <!-- Material Cards Injected Here -->
+                </div>
+            </div>
+
+            <!-- VIEW: SITE -->
+            <div id="view-site" class="view-section hidden space-y-6">
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <!-- Location -->
+                    <div class="bg-white p-6 rounded-xl shadow-sm border border-slate-200">
+                        <div class="flex items-center gap-3 mb-4 text-civil-600">
+                            <i data-lucide="map-pin" class="w-6 h-6"></i>
+                            <h3 class="font-bold text-lg">Site Geolocation</h3>
+                        </div>
+                        <div id="geo-result" class="bg-slate-50 p-4 rounded text-sm font-mono mb-4 text-slate-600">
+                            Location not fetched yet.
+                        </div>
+                        <button onclick="app.getGeolocation()"
+                            class="w-full border border-civil-600 text-civil-600 hover:bg-civil-50 py-2 rounded-md transition text-sm font-medium">Get
+                            Current Coordinates</button>
+                    </div>
+
+                    <!-- Weather -->
+                    <div class="bg-white p-6 rounded-xl shadow-sm border border-slate-200">
+                        <div class="flex justify-between items-start mb-4">
+                            <div class="flex items-center gap-3 text-civil-600">
+                                <i data-lucide="cloud-sun" class="w-6 h-6"></i>
+                                <h3 class="font-bold text-lg">Weather Check</h3>
+                            </div>
+                            <button onclick="app.toggleSettings()" class="text-xs text-slate-400 underline">Set API
+                                Key</button>
+                        </div>
+
+                        <div id="weather-display" class="text-center py-6">
+                            <p class="text-slate-400 mb-2">Configure OpenWeatherMap API key in settings to see live
+                                data.</p>
+                            <div
+                                class="inline-block bg-yellow-50 text-yellow-800 px-3 py-1 rounded text-xs border border-yellow-200">
+                                Demo Mode</div>
+                            <div class="mt-4 flex justify-center items-center gap-4">
+                                <div class="text-left">
+                                    <div class="text-3xl font-bold text-slate-800">24°C</div>
+                                    <div class="text-sm text-slate-500">Clear Sky</div>
+                                </div>
+                                <div class="text-left text-xs text-slate-500 border-l pl-4">
+                                    <div>Wind: 12 km/h NW</div>
+                                    <div>Humidity: 45%</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- VIEW: SETTINGS -->
+            <div id="view-settings" class="view-section hidden space-y-6 max-w-2xl mx-auto">
+                <div class="bg-white p-6 rounded-xl shadow-sm border border-slate-200">
+                    <h3 class="font-bold text-lg mb-4">Application Settings</h3>
+                    <div class="space-y-4">
+                        <div>
+                            <input type="text" id="setting-name" class="w-full border rounded-md p-2"
+                                placeholder="Student Name" onchange="app.saveSettings()">
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-slate-700 mb-1">Client Name</label>
+                            <input type="text" id="setting-client" class="w-full border rounded-md p-2"
+                                placeholder="Client / Organization" onchange="app.saveSettings()">
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-slate-700 mb-1">Project ID / Location</label>
+                            <input type="text" id="setting-project" class="w-full border rounded-md p-2"
+                                placeholder="Project 101 - Site A" onchange="app.saveSettings()">
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-slate-700 mb-1">OpenWeatherMap API Key</label>
+                            <input type="password" id="setting-weather-key" class="w-full border rounded-md p-2"
+                                placeholder="Paste key here..." onchange="app.saveSettings()">
+                            <p class="text-xs text-slate-400 mt-1">Key is stored in your browser's LocalStorage only.
+                            </p>
+                        </div>
+                        <div class="pt-4 border-t">
+                            <button onclick="app.clearData()" class="text-red-600 text-sm hover:underline">Reset All App
+                                Data</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+
+        <!-- Help Modal Overlay -->
+        <div id="help-modal" class="hidden fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
+            <div class="bg-white rounded-xl shadow-2xl max-w-lg w-full p-6 relative">
+                <button onclick="app.toggleHelp()" class="absolute top-4 right-4 text-slate-400 hover:text-slate-600">
+                    <i data-lucide="x" class="w-5 h-5"></i>
+                </button>
+                <h3 class="text-lg font-bold mb-2">How it works</h3>
+                <div class="space-y-3 text-sm text-slate-600 overflow-y-auto max-h-[60vh]">
+                    <p><strong>Calculators:</strong> Input geometry and loads. Formulas follow standard mechanics (BM =
+                        WL/4 for point load). Concrete design uses simplified Limit State checks.</p>
+                    <p><strong>Sketchpad:</strong> Click and drag to draw lines. Use the scale input to calibrate (e.g.,
+                        if 100 pixels = 5m, set scale to 0.05). </p>
+                    <p><strong>Takeoff:</strong> Add rows manually. Results update automatically. Export PDF creates a
+                        formatted report.</p>
+                    <p><strong>Storage:</strong> Everything is saved to your browser. No server is used.</p>
+                </div>
+            </div>
+        </div>
+
+    </main>
+
+    <script src="scripts/config.js"></script>
+    <script src="scripts/main.js"></script>
+</body>
+
+</html>
