@@ -44,7 +44,44 @@ const app = {
         this.state.settings.project = document.getElementById('setting-project').value;
         this.state.settings.weatherKey = document.getElementById('setting-weather-key').value;
         this.saveState();
-        alert('Settings Saved');
+        this.showToast('Settings saved successfully', 'success');
+    },
+
+    showToast(message, type = 'info') {
+        const toast = document.getElementById('toast');
+
+        // Reset classes
+        toast.className = "fixed bottom-6 left-1/2 transform -translate-x-1/2 z-50 flex items-center gap-3 px-6 py-3 rounded-lg shadow-lg font-medium transition-all duration-300 pointer-events-none";
+
+        // Colors & Icons
+        const styles = {
+            success: { bg: 'bg-green-600', text: 'text-white', icon: 'check-circle' },
+            error: { bg: 'bg-red-600', text: 'text-white', icon: 'alert-circle' },
+            info: { bg: 'bg-slate-800', text: 'text-white', icon: 'info' }
+        };
+
+        const style = styles[type] || styles.info;
+
+        toast.classList.add(style.bg, style.text);
+
+        // Re-inject content to ensure icon exists
+        toast.innerHTML = `
+            <i data-lucide="${style.icon}" class="w-5 h-5"></i>
+            <span>${message}</span>
+        `;
+
+        lucide.createIcons();
+
+        // Show
+        requestAnimationFrame(() => {
+            toast.classList.remove('opacity-0', 'translate-y-8');
+        });
+
+        // Hide after 3s
+        if (this.toastTimeout) clearTimeout(this.toastTimeout);
+        this.toastTimeout = setTimeout(() => {
+            toast.classList.add('opacity-0', 'translate-y-8');
+        }, 3000);
     },
 
     saveState() {
@@ -56,7 +93,7 @@ const app = {
     // --- REPORTING ---
     exportReport() {
         if (!window.jspdf) {
-            alert('PDF Library not loaded. Please check internet connection.');
+            this.showToast('PDF Library not loaded. Please check internet connection.', 'error');
             return;
         }
         const { jsPDF } = window.jspdf;
@@ -518,7 +555,7 @@ const app = {
         const message = document.getElementById('contact-message').value;
 
         if (!name || !message) {
-            alert('Please fill in all fields.');
+            this.showToast('Please fill in all fields.', 'error');
             return;
         }
 
